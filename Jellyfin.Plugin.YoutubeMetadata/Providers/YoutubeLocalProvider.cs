@@ -34,9 +34,9 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
         // Name for use in API?
         public string channel_id { get; set; }
         //public string
-        public int season_number { get; set; }
-        public int episode_number { get; set; }
-        public int age_limit { get; set; }
+        public int? season_number { get; set; }
+        public int? episode_number { get; set; }
+        public int? age_limit { get; set; }
         public string series { get; set; }
         public List<string> tags { get; set; }
         public List<string> categories { get; set; }
@@ -121,15 +121,17 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
         private void AddPersons<T>(MetadataResult<T> result, InfoJson infoJson) where T: IHasProviderIds {
             var extractor = extractorKeyMapping.GetValueOrDefault(infoJson.extractor_key, infoJson.extractor_key);
 
-            if (!(infoJson.channel_id is null)) {
+            if (!(infoJson.channel_id is null) || !(infoJson.uploader_id is null) || !(infoJson.uploader is null)) {
+                var name = infoJson.uploader ?? infoJson.uploader_id;
+                var id = infoJson.channel_id ?? infoJson.uploader_id ?? infoJson.uploader;
                 var uploader = new PersonInfo
                 {
-                    Name = infoJson.uploader,
-                    Type = PersonType.Producer,
+                    Name = name,
+                    Type = PersonType.Director,
                     ProviderIds = new Dictionary<string, string> {
-                        { extractor, infoJson.channel_id },
-                        { string.Format("ytdl:{0}", extractor), infoJson.channel_id },
-                        { "ytdl",  string.Format("{0}:{1}", extractor, infoJson.channel_id) },
+                        { extractor, id },
+                        { string.Format("ytdl:{0}", extractor), id },
+                        { "ytdl",  string.Format("{0}:{1}", extractor, id) },
                     },
                 };
 
@@ -150,15 +152,12 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
                     return Task.FromResult(result);
                 }
 
-
-
                 result.HasMetadata = true;
                 var item = new Movie();
                 result.Item = item;
 
                 UpdateItemMetadata(item, infoJson);
                 AddPersons<Movie>(result, infoJson);
-
 
                 return Task.FromResult(result);
             }
@@ -173,7 +172,34 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
         Task<MetadataResult<Episode>> ILocalMetadataProvider<Episode>.GetMetadata(ItemInfo info, IDirectoryService directoryService, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Episode>();
-            result.HasMetadata = false;
+            try
+            {
+                var infoJsonFile = GetInfoJsonFile(info.Path);
+
+                var infoJson = ReadInfoJson(infoJsonFile.FullName, cancellationToken);
+                if (infoJson.series is null) {
+                    result.HasMetadata = false;
+                    return Task.FromResult(result);
+                }
+
+                result.HasMetadata = true;
+                var item = new Episode();
+                result.Item = item;
+
+                item.SeriesName = infoJson.series;
+                item.IndexNumber = infoJson.episode_number;
+                item.ParentIndexNumber = infoJson.season_number;
+
+                UpdateItemMetadata(item, infoJson);
+                AddPersons<Episode>(result, infoJson);
+
+            }
+            catch (FileNotFoundException)
+            {
+                _logger.LogInformation("Could not find {0}", info.Path);
+                result.HasMetadata = false;
+            }
+
             return Task.FromResult(result);
         }
 

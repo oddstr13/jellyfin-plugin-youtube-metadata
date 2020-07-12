@@ -12,6 +12,7 @@ using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Model.Drawing;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Controller.Entities.TV;
 
 namespace Jellyfin.Plugin.YoutubeMetadata.Providers
 {
@@ -63,7 +64,7 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
                             //_logger.LogDebug("Image is larger!");
                             largestLocalImg = new LocalImageInfo {
                                 FileInfo = file,
-                                Type = ImageType.Thumb
+                                Type = ImageType.Primary
                             };
                             largestSize = size;
                         }
@@ -80,6 +81,6 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
         }
 
         public bool Supports(BaseItem item)
-            => item is Movie;
+            => item is Movie || item is MusicVideo || item is Episode || item is Trailer;
     }
 }
