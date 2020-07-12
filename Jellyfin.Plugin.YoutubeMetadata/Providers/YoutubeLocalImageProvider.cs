@@ -27,13 +27,13 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
             _logger = logger;
             _imageProcessor = imageProcessor;
         }
-        // This does not look neccesary?
-        public string Name => "YoutubeMetadata";
+
+        public string Name => "YouTube Metadata";
         public int Order => 1;
 
         //public const string YTDL_THUMBNAILS_RE_STR = @"(_[0-9])?\.(jpe?g|webp|png|gif|tiff?)$";
         //private Regex _thumbnailsRe = new Regex(YTDL_THUMBNAILS_RE_STR, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
-        
+
         public List<LocalImageInfo> GetImages(BaseItem item, IDirectoryService directoryService)
         {
             _logger.LogInformation(item.Path);
