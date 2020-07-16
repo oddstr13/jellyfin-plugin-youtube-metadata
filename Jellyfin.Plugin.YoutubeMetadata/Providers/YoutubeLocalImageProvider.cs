@@ -40,6 +40,10 @@ namespace Jellyfin.Plugin.YoutubeMetadata.Providers
             _logger.LogInformation(item.Path);
             var list = new List<LocalImageInfo>();
 
+            if (item?.ContainingFolderPath is null) {
+                return list;
+            }
+
             var files = _fileSystem.GetFiles(item.ContainingFolderPath);
 
             LocalImageInfo largestLocalImg = null;
